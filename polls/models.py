@@ -32,6 +32,24 @@ SELECT name, min(duration) FROM (
 """
 
 SQL_TASK_3 = """
+select diffs.name, MAX(diffs.diff) FROM(
+    SELECT january.name as name, ABS(january.division - february.division) as diff FROM (
+        SELECT  polls_quest.id as id, polls_quest.name,
+            (Count(CASE WHEN polls_game.game_has_passed THEN 1 END) * 1.0 / Count(*)) as division FROM polls_quest
+        JOIN polls_game ON polls_game.quest_id == polls_quest.id
+        WHERE strftime('%Y', polls_game.date_start) = '2024' AND strftime('%m', polls_game.date_start) = '01'
+        group by polls_quest.id
+        ) as january
+    JOIN (
+        SELECT polls_quest.id as id,
+            (Count(CASE WHEN polls_game.game_has_passed THEN 1 END) * 1.0 / Count(*)) as division FROM polls_quest
+        JOIN polls_game ON polls_game.quest_id == polls_quest.id
+        WHERE strftime('%Y', polls_game.date_start) = '2024' AND strftime('%m', polls_game.date_start) = '02'
+        group by polls_quest.id
+        ) as february ON january.id == february.id
+    ORDER BY january.id DESC
+    ) as diffs
+;
 """
 
 
@@ -72,6 +90,9 @@ class Quest(models.Model):
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
     name = models.CharField("Название квеста", max_length=100)
 
+    @classmethod
+    def task3(cls):
+        return my_query(SQL_TASK_3)
 
 class Employee(models.Model):
     first_name = models.CharField("Имя сотрудника", max_length=50)
